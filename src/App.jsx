@@ -6,6 +6,8 @@ import Lembur from './pages/Lembur';
 import Absen from './pages/Absen';
 import Login from './pages/Login'; 
 import SettingsPage from './pages/SettingsPage'; // <-- Mengganti nama agar tidak bentrok dengan ikon Settings
+import logoKantor from './assets/logo.png';
+import simbolWatermark from './assets/simbol.jpg';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null); 
@@ -22,7 +24,8 @@ export default function App() {
       
       {/* BACKGROUND WATERMARK */}
       <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center opacity-5 mix-blend-multiply overflow-hidden">
-        <img src="src/assets/simbol.jpg" alt="Watermark" className="w-[25rem] md:w-[35rem] lg:w-[45rem] object-contain blur-[3px]" />
+        {/* 2. PANGGIL VARIABEL WATERMARK */}
+        <img src={simbolWatermark} alt="Watermark" className="w-[25rem] md:w-[35rem] lg:w-[45rem] object-contain blur-[3px]" />
       </div>
 
       {/* MOBILE BACKDROP OVERLAY */}
@@ -33,8 +36,9 @@ export default function App() {
       {/* SIDEBAR */}
       <aside className={`bg-[#394059] text-slate-300 w-64 flex-shrink-0 transition-transform duration-300 ease-in-out flex flex-col z-40 fixed inset-y-0 left-0 lg:relative ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="pt-8 pb-4 flex flex-col items-center justify-center relative">
-          <div className="w-40 mb-3 flex items-center justify-center">
-             <img src="src/assets/logo1.png" alt="Logo" className="w-full h-auto object-contain drop-shadow-md" />
+        <div className="w-40 mb-3 flex items-center justify-center">
+             {/* 3. PANGGIL VARIABEL LOGO */}
+             <img src={logoKantor} alt="Logo" className="w-full h-auto object-contain drop-shadow-md" />
           </div>
           <p className="text-sm text-white font-medium tracking-wide">POP. Pacitan</p>
           <div className="w-4/5 h-px bg-white/20 mt-4 rounded-full"></div>

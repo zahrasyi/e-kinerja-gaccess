@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import logoKantor from '../assets/logo.png';
 
 export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -53,7 +54,7 @@ export default function Login({ onLoginSuccess }) {
         {/* Header Login */}
         <div className="bg-[#394059] p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[#01BFD7]/10 transform -skew-y-6 -translate-y-10"></div>
-          <img src="src/assets/logo1.png" alt="Logo" className="w-full h-auto object-contain drop-shadow-md" />
+          <img src={logoKantor} alt="Logo" className="h-12 mx-auto relative z-10 drop-shadow-md mb-3" />
           <p className="text-slate-300 text-sm mt-5 relative z-10">Sistem Informasi Manajemen G Access POP. Pacitan</p>
         </div>
 
