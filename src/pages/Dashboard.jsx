@@ -27,7 +27,7 @@ export default function Dashboard({ currentRole }) {
   const [expandedChart, setExpandedChart] = useState(null); 
   const [modalFilterDate, setModalFilterDate] = useState('');
   const [modalFilterMonth, setModalFilterMonth] = useState('');
-  const [modalFilterYear, setModalFilterYear] = useState(''); // State Baru untuk Tahun
+  const [modalFilterYear, setModalFilterYear] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -60,7 +60,7 @@ export default function Dashboard({ currentRole }) {
     setExpandedChart(null);
     setModalFilterDate('');
     setModalFilterMonth('');
-    setModalFilterYear(''); // Reset filter tahun saat tutup
+    setModalFilterYear('');
   };
 
   // --- FUNGSI KALKULASI DATA GRAFIK ---
@@ -114,15 +114,6 @@ export default function Dashboard({ currentRole }) {
       .slice(0, 6); 
   };
 
-  const getAbsenStats = (data) => {
-    return [
-      { name: 'Hadir', value: data.filter(a => a.ket === 'Hadir').length },
-      { name: 'Sakit', value: data.filter(a => a.ket === 'Sakit').length },
-      { name: 'Izin', value: data.filter(a => a.ket === 'Izin').length },
-      { name: 'Alpha', value: data.filter(a => a.ket === 'Alpha').length },
-    ].filter(s => s.value > 0);
-  };
-
   // --- RINGKASAN DASHBOARD UTAMA ---
   const totalOmzet = psbData.reduce((acc, curr) => {
     if (curr.paket && curr.keterangan !== 'Promo') {
@@ -151,7 +142,6 @@ export default function Dashboard({ currentRole }) {
   const renderChart = (chartId, isExpanded = false) => {
     const currentPsb = isExpanded ? applyFilter(psbData, 'tgl_aktivasi') : psbData;
     const currentLembur = isExpanded ? applyFilter(lemburData, 'tgl') : lemburData;
-    const currentAbsen = isExpanded ? applyFilter(absenData, 'tgl') : absenData;
 
     const noDataView = <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm bg-[#F4F7FC] rounded-lg border border-dashed border-slate-300">Belum ada data untuk filter ini</div>;
 
@@ -230,21 +220,6 @@ export default function Dashboard({ currentRole }) {
           </ResponsiveContainer>
         );
       }
-      case 'absen': {
-        const data = getAbsenStats(currentAbsen);
-        if (data.length === 0) return noDataView;
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius="40%" outerRadius="80%" paddingAngle={2} dataKey="value" label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}>
-                {data.map((entry, index) => <Cell key={`cell-${index}`} fill={BRAND_COLORS[index % BRAND_COLORS.length]} />)}
-              </Pie>
-              <RechartsTooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-              <Legend verticalAlign="bottom" height={36}/>
-            </PieChart>
-          </ResponsiveContainer>
-        );
-      }
       default: return null;
     }
   };
@@ -252,6 +227,7 @@ export default function Dashboard({ currentRole }) {
   return (
     <div className="space-y-6">
       
+      {/* 4 KOTAK RINGKASAN */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${currentRole !== 'user' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-[#01BFD7]/10 text-[#01BFD7] rounded-lg flex items-center justify-center"><Wifi className="w-6 h-6" /></div>
@@ -261,7 +237,7 @@ export default function Dashboard({ currentRole }) {
         {currentRole !== 'user' && (
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
             <div className="w-12 h-12 bg-[#10B981]/10 text-[#10B981] rounded-lg flex items-center justify-center"><DollarSign className="w-6 h-6" /></div>
-            <div><p className="text-sm text-slate-500 font-medium">Omzet Berbayar</p><h3 className="text-xl font-bold text-[#394059]">Rp {totalOmzet.toLocaleString('id-ID')}</h3></div>
+            <div><p className="text-sm text-slate-500 font-medium">Est. Omzet Berbayar</p><h3 className="text-xl font-bold text-[#394059]">Rp {totalOmzet.toLocaleString('id-ID')}</h3></div>
           </div>
         )}
 
@@ -278,83 +254,116 @@ export default function Dashboard({ currentRole }) {
 
       <div className="bg-gradient-to-r from-[#E2FAFD] to-white border border-[#01BFD7]/20 rounded-xl p-5 shadow-sm flex items-center gap-4 text-[#394059]">
         <div className="bg-[#01BFD7]/10 p-2.5 rounded-full flex-shrink-0 animate-pulse">
-          <Lightbulb className="w-6 h-6 text-[#d3d701]" />
+          <Lightbulb className="w-6 h-6 text-[#01BFD7]" />
         </div>
         <div>
-          <h4 className="text-xs font-bold text-[#394059] uppercase tracking-wider mb-1">Insight</h4>
+          <h4 className="text-xs font-bold text-[#01BFD7] uppercase tracking-wider mb-1">Insight Otomatis</h4>
           <p className="text-sm font-medium leading-relaxed">{generateInsight()}</p>
         </div>
       </div>
 
+      {/* BARIS 1: TREND & PAKET */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm lg:col-span-2 relative group hover:border-[#01BFD7]/30 transition-colors">
-          <button onClick={() => setExpandedChart({id: 'trend', title: 'Trend Pemasangan Baru (PSB)'})} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          <button onClick={() => setExpandedChart({
+            id: 'trend', 
+            title: 'Trend Pemasangan Baru (PSB)',
+            desc: 'Melihat pergerakan naik-turunnya jumlah pelanggan baru berdasarkan tanggal aktivasi.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Trend Pemasangan Baru (PSB)</h3>
           <div className="h-64">{renderChart('trend', false)}</div>
         </div>
         
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
-          <button onClick={() => setExpandedChart({id: 'paket', title: 'Distribusi Paket Terlaris'})} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          <button onClick={() => setExpandedChart({
+            id: 'paket', 
+            title: 'Distribusi Paket Terlaris',
+            desc: 'Menganalisis paket layanan mana yang paling diminati pelanggan.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Distribusi Paket Terlaris</h3>
           <div className="h-64">{renderChart('paket', false)}</div>
         </div>
       </div>
 
+      {/* BARIS 2: PROMO, PERFORMA, LEMBUR */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
-          <button onClick={() => setExpandedChart({id: 'promo', title: 'Rasio Promo vs Berbayar'})} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          <button onClick={() => setExpandedChart({
+            id: 'promo', 
+            title: 'Rasio Promo vs Berbayar',
+            desc: 'Membandingkan jumlah pendaftar harga normal (Berbayar) dengan pendaftar harga Promo.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Promo vs Berbayar</h3>
           <div className="h-60">{renderChart('promo', false)}</div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
-          <button onClick={() => setExpandedChart({id: 'performa', title: 'Top Performa Referensi (Via)'})} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          <button onClick={() => setExpandedChart({
+            id: 'performa', 
+            title: 'Top Performa Referensi (Via)',
+            desc: 'Mengevaluasi pihak/teknisi yang paling banyak mendatangkan pelanggan baru.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Top Performa (Via)</h3>
           <div className="h-60">{renderChart('performa', false)}</div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
-          <button onClick={() => setExpandedChart({id: 'lembur', title: 'Beban Lembur Karyawan'})} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          <button onClick={() => setExpandedChart({
+            id: 'lembur', 
+            title: 'Beban Lembur Karyawan',
+            desc: 'Memantau jam lembur tambahan untuk mencegah beban kerja yang tidak merata.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Beban Lembur Karyawan</h3>
           <div className="h-60">{renderChart('lembur', false)}</div>
         </div>
       </div>
 
-      {/* MODAL PERBESAR GRAFIK DENGAN FITUR FILTER */}
+      {/* MODAL PERBESAR GRAFIK DENGAN FITUR FILTER & DESKRIPSI */}
       {expandedChart && (
         <div className="fixed inset-0 bg-[#394059]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 lg:p-10">
-          <div className="bg-white w-full max-w-5xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-[#F4F7FC] flex-wrap gap-4">
-              <h2 className="text-xl font-bold text-[#394059] flex items-center gap-2">
-                <Maximize2 className="w-5 h-5 text-[#01BFD7]" /> {expandedChart.title}
-              </h2>
-              
-              <div className="flex items-center gap-4">
-                {/* Opsi Filter Tgl, Bulan, & Tahun */}
-                <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                  <div className="px-2 text-slate-400"><Filter className="w-4 h-4" /></div>
-                  <select value={modalFilterDate} onChange={(e) => setModalFilterDate(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 pr-2 border-r border-slate-200 cursor-pointer">
-                    <option value="">Semua Tgl</option>
-                    {TANGGAL_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                  <select value={modalFilterMonth} onChange={(e) => setModalFilterMonth(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 pr-2 border-r border-slate-200 cursor-pointer">
-                    <option value="">Semua Bulan</option>
-                    {BULAN_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                  <select value={modalFilterYear} onChange={(e) => setModalFilterYear(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-2 cursor-pointer">
-                    <option value="">Semua Tahun</option>
-                    {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
+            <div className="p-5 border-b border-slate-100 bg-[#F4F7FC] flex flex-col gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                
+                {/* Header Kiri: Judul dan Deskripsi */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-[#394059] flex items-center gap-2">
+                    <Maximize2 className="w-5 h-5 text-[#01BFD7]" /> {expandedChart.title}
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1.5 lg:ml-7 leading-relaxed">
+                    {expandedChart.desc}
+                  </p>
+                </div>
+                
+                {/* Header Kanan: Filter dan Tombol Close */}
+                <div className="flex items-center gap-3 lg:self-start self-end">
+                  <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="px-2 text-slate-400 hidden sm:block"><Filter className="w-4 h-4" /></div>
+                    <select value={modalFilterDate} onChange={(e) => setModalFilterDate(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-1 border-r border-slate-200 cursor-pointer">
+                      <option value="">Tgl</option>
+                      {TANGGAL_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select value={modalFilterMonth} onChange={(e) => setModalFilterMonth(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-1 border-r border-slate-200 cursor-pointer">
+                      <option value="">Bulan</option>
+                      {BULAN_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                    <select value={modalFilterYear} onChange={(e) => setModalFilterYear(e.target.value)} className="bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-1 cursor-pointer">
+                      <option value="">Tahun</option>
+                      {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+
+                  <button onClick={closeModal} className="p-2 bg-white text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg border border-slate-200 shadow-sm transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
-                <button onClick={closeModal} className="p-2 bg-white text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg border border-slate-200 shadow-sm transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
-            <div className="flex-1 p-6 lg:p-10 min-h-0 bg-white">
+            {/* Area Grafik */}
+            <div className="flex-1 p-6 lg:p-10 min-h-0 bg-white flex flex-col items-center justify-center">
               {renderChart(expandedChart.id, true)}
             </div>
 
