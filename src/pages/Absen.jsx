@@ -6,7 +6,8 @@ import { supabase } from '../supabaseClient';
 const DAFTAR_KARYAWAN = [
   { nama: 'Madi', role: 'Teknisi' }, { nama: 'Zaki', role: 'Teknisi' },
   { nama: 'Pauji', role: 'Teknisi' }, { nama: 'Slamet', role: 'Teknisi' },
-  { nama: 'Nur', role: 'Admin' }, { nama: 'Yona', role: 'Admin' }
+  { nama: 'Nur', role: 'Teknisi' }, { nama: 'Irul', role: 'CS' }, { nama: 'Anas', role: 'CS' }, 
+  { nama: 'Nur', role: 'CS' }, { nama: 'Alif', role: 'CS' }, { nama: 'Yona', role: 'Admin' }
 ];
 
 const TANGGAL_OPTIONS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
