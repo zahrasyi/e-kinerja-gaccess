@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, Activity, Users, DollarSign, Maximize2, X, Lightbulb, Filter } from 'lucide-react';
+import { Wifi, Activity, Users, DollarSign, Maximize2, X, Lightbulb, Filter, CalendarDays } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell, LineChart, Line, RadialBarChart, RadialBar 
@@ -114,6 +114,28 @@ export default function Dashboard({ currentRole }) {
       .slice(0, 6); 
   };
 
+  // Kalkulasi Khusus Absensi
+  const getAbsenStats = (data) => {
+    const groupedData = {};
+    data.forEach(item => {
+      if (!item.tgl) return;
+      const dateKey = item.tgl.split('T')[0];
+      const dateObj = new Date(item.tgl);
+      const formattedDate = isNaN(dateObj.getTime()) ? item.tgl : dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+
+      if (!groupedData[dateKey]) {
+        groupedData[dateKey] = { tanggal: formattedDate, Hadir: 0, Izin: 0, Sakit: 0, Alpha: 0, fullDate: dateKey };
+      }
+
+      if (item.ket === 'Hadir') groupedData[dateKey].Hadir += 1;
+      else if (item.ket === 'Izin') groupedData[dateKey].Izin += 1;
+      else if (item.ket === 'Sakit') groupedData[dateKey].Sakit += 1;
+      else if (item.ket === 'Alpha') groupedData[dateKey].Alpha += 1;
+    });
+
+    return Object.values(groupedData).sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate));
+  };
+
   // --- RINGKASAN DASHBOARD UTAMA ---
   const totalOmzet = psbData.reduce((acc, curr) => {
     if (curr.paket && curr.keterangan !== 'Promo') {
@@ -142,6 +164,7 @@ export default function Dashboard({ currentRole }) {
   const renderChart = (chartId, isExpanded = false) => {
     const currentPsb = isExpanded ? applyFilter(psbData, 'tgl_aktivasi') : psbData;
     const currentLembur = isExpanded ? applyFilter(lemburData, 'tgl') : lemburData;
+    const currentAbsen = isExpanded ? applyFilter(absenData, 'tgl') : absenData;
 
     const noDataView = <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm bg-[#F4F7FC] rounded-lg border border-dashed border-slate-300">Belum ada data untuk filter ini</div>;
 
@@ -217,6 +240,28 @@ export default function Dashboard({ currentRole }) {
               <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px' }}/>
               <RechartsTooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
             </RadialBarChart>
+          </ResponsiveContainer>
+        );
+      }
+      case 'absen': {
+        const rawData = getAbsenStats(currentAbsen);
+        // Kalau tidak di-expand, tampilkan 7 hari terakhir saja agar tidak terlalu rapat
+        const data = isExpanded ? rawData : rawData.slice(-7); 
+        
+        if (data.length === 0) return noDataView;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="tanggal" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} allowDecimals={false} />
+              <RechartsTooltip cursor={{fill: '#F4F7FC'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+              <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: '500' }} iconType="circle" />
+              <Bar dataKey="Hadir" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={45} />
+              <Bar dataKey="Izin" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={45} />
+              <Bar dataKey="Sakit" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={45} />
+              <Bar dataKey="Alpha" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={45} />
+            </BarChart>
           </ResponsiveContainer>
         );
       }
@@ -315,6 +360,22 @@ export default function Dashboard({ currentRole }) {
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Beban Lembur Karyawan</h3>
           <div className="h-60">{renderChart('lembur', false)}</div>
+        </div>
+      </div>
+
+      {/* BARIS 3: REKAP ABSENSI HARIAN (BARU) */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
+          <button onClick={() => setExpandedChart({
+            id: 'absen', 
+            title: 'Rekap Kehadiran Harian',
+            desc: 'Pantauan statistik harian jumlah Hadir, Izin, Sakit, dan Alpha.'
+          })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
+          
+          <h3 className="text-base font-semibold text-[#394059] flex items-center gap-2 mb-6">
+            Rekap Kehadiran Harian
+          </h3>
+          <div className="h-72">{renderChart('absen', false)}</div>
         </div>
       </div>
 
