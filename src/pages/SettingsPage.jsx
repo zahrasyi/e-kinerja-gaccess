@@ -83,7 +83,7 @@ export default function Settings({ currentRole }) {
               <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                   <tr className="text-[#394059] text-sm border-b border-slate-200">
-                    <th className="p-4 font-medium">Nama Karyawan</th>
+                    <th className="p-4 font-medium">Nama</th>
                     <th className="p-4 font-medium">Email Terdaftar</th>
                     <th className="p-4 font-medium">Role Akses</th>
                     <th className="p-4 font-medium text-center">Aksi</th>
