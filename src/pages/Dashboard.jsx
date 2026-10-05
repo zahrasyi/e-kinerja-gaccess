@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { supabase } from '../supabaseClient'; 
 
+// KEMBALI KE BRAND COLORS ASLI MILIKMU
 const BRAND_COLORS = ['#01BFD7', '#6366F1', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6'];
 
 // Opsi Filter
@@ -66,11 +67,26 @@ export default function Dashboard({ currentRole }) {
     const raw = data.reduce((acc, curr) => {
       if (!curr.tgl_aktivasi) return acc;
       const d = new Date(curr.tgl_aktivasi);
-      const dateLabel = isNaN(d.getTime()) ? curr.tgl_aktivasi : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-      acc[dateLabel] = (acc[dateLabel] || 0) + 1;
+      if (isNaN(d.getTime())) return acc;
+
+      const dateKey = d.toISOString().split('T')[0];
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          dateObj: d,
+          Total: 0
+        };
+      }
+      acc[dateKey].Total += 1;
       return acc;
     }, {});
-    return Object.keys(raw).map(date => ({ name: date, Total: raw[date] }));
+
+    return Object.keys(raw)
+      .sort((a, b) => new Date(a) - new Date(b))
+      .map(key => ({
+        name: raw[key].dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+        Total: raw[key].Total
+      }));
   };
 
   const getPaketStats = (data) => {
@@ -112,7 +128,6 @@ export default function Dashboard({ currentRole }) {
       .slice(0, 6); 
   };
 
-  // --- LOGIKA BARU: STACKED BAR ANGKA AKTUAL (0, 15, 30) ---
   const getAbsenStats = (data) => {
     const groupedData = {};
     data.forEach(item => {
@@ -131,7 +146,6 @@ export default function Dashboard({ currentRole }) {
       groupedData[name].Total += 1;
     });
 
-    // Mengembalikan nilai asli (bukan persentase)
     return Object.values(groupedData)
       .map(emp => ({
         name: emp.name.split(' ')[0], 
@@ -145,17 +159,16 @@ export default function Dashboard({ currentRole }) {
       .slice(0, 10); 
   };
 
-  // Tooltip Khusus Absensi (Menampilkan hitungan HARI)
   const CustomAbsenTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload; 
       return (
         <div className="bg-white/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-100 min-w-[200px]">
           <p className="text-sm font-bold text-[#394059] mb-3 pb-2 border-b border-slate-100 flex items-center gap-2">
-            <Users className="w-4 h-4 text-[#01BFD7]" /> {label}
+            <Users className="w-4 h-4 text-[#01BFD7]" /> Karyawan: {label}
           </p>
           {payload.map((entry, index) => {
-            if (entry.value === 0) return null; // Sembunyikan yang 0 hari
+            if (entry.value === 0) return null; 
             return (
               <div key={index} className="flex items-center justify-between gap-4 mb-2 text-sm">
                 <span className="flex items-center gap-2 text-slate-600 font-medium">
@@ -283,7 +296,7 @@ export default function Dashboard({ currentRole }) {
           </ResponsiveContainer>
         );
       }
-      // RENDER STACKED BAR NORMAL UNTUK ABSENSI
+      // RENDER STACKED BAR UNTUK ABSENSI (WARNA CUSTOM KHUSUS ABSEN)
       case 'absen': {
         const data = getAbsenStats(currentAbsen);
         if (data.length === 0) return noDataView;
@@ -294,7 +307,6 @@ export default function Dashboard({ currentRole }) {
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} dy={10} />
               
-              {/* Sumbu Y dikunci hanya menampilkan 0, 15, dan 30 */}
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
@@ -306,11 +318,11 @@ export default function Dashboard({ currentRole }) {
               <RechartsTooltip cursor={{fill: '#F4F7FC'}} content={<CustomAbsenTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: '500' }} iconType="circle" />
               
-              {/* Baris ini ditumpuk berdasarkan hari aktual */}
+              {/* Warna Khusus Absensi Sesuai Request */}
               <Bar dataKey="Hadir" stackId="a" fill="#10B981" maxBarSize={60} />
-              <Bar dataKey="Izin" stackId="a" fill="#3B82F6" maxBarSize={60} />
+              <Bar dataKey="Izin" stackId="a" fill="#01BFD7" maxBarSize={60} />
               <Bar dataKey="Sakit" stackId="a" fill="#F59E0B" maxBarSize={60} />
-              <Bar dataKey="Alpha" stackId="a" fill="#EF4444" maxBarSize={60} />
+              <Bar dataKey="Alpha" stackId="a" fill="#394059" maxBarSize={60} />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -352,7 +364,7 @@ export default function Dashboard({ currentRole }) {
           <Lightbulb className="w-6 h-6 text-[#01BFD7]" />
         </div>
         <div>
-          <h4 className="text-xs font-bold text-[#01BFD7] uppercase tracking-wider mb-1">Insight Otomatis</h4>
+          <h4 className="text-xs font-bold text-[#F59E0B] uppercase tracking-wider mb-1">Insight Otomatis</h4>
           <p className="text-sm font-medium leading-relaxed">{generateInsight()}</p>
         </div>
       </div>
@@ -413,7 +425,7 @@ export default function Dashboard({ currentRole }) {
         </div>
       </div>
 
-      {/* BARIS 3: REKAP ABSENSI STACKED BAR NORMAL (Hanya 1 Grid Penuh) */}
+      {/* BARIS 3: REKAP ABSENSI */}
       <div className="grid grid-cols-1 w-full">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
@@ -423,7 +435,7 @@ export default function Dashboard({ currentRole }) {
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           
           <h3 className="text-base font-semibold text-[#394059] flex items-center gap-2 mb-6">
-            Akumulasi Kehadiran Bulanan 
+            Akumulasi Kehadiran Bulanan (Maks 30 Hari)
           </h3>
           <div className="h-80">{renderChart('absen', false)}</div>
         </div>
