@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { supabase } from '../supabaseClient'; 
 
-// KEMBALI KE BRAND COLORS ASLI MILIKMU
+// WARNA SESUAI REQUEST
 const BRAND_COLORS = ['#01BFD7', '#6366F1', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6'];
 
 // Opsi Filter
@@ -128,33 +128,36 @@ export default function Dashboard({ currentRole }) {
       .slice(0, 6); 
   };
 
+  // 👇 PERBAIKAN: Fungsi Data Absensi (Pisahkan Nur CS dan Nur Teknisi)
   const getAbsenStats = (data) => {
     const groupedData = {};
     data.forEach(item => {
       if (!item.nama) return;
-      const name = item.nama;
+      
+      const namaStr = String(item.nama);
+      const divisiStr = item.divisi ? String(item.divisi) : 'Umum';
 
-      if (!groupedData[name]) {
-        groupedData[name] = { name: name, Hadir: 0, Izin: 0, Sakit: 0, Alpha: 0, Total: 0 };
+      // Kunci unik untuk memisahkan nama kembar (ex: "Nur-CS")
+      const uniqueKey = `${namaStr}-${divisiStr}`;
+
+      let labelName = namaStr.split(' ')[0]; 
+      if (namaStr.toLowerCase() === 'nur') {
+        labelName = `Nur ${divisiStr}`; 
       }
 
-      if (item.ket === 'Hadir') groupedData[name].Hadir += 1;
-      else if (item.ket === 'Izin') groupedData[name].Izin += 1;
-      else if (item.ket === 'Sakit') groupedData[name].Sakit += 1;
-      else if (item.ket === 'Alpha') groupedData[name].Alpha += 1;
+      if (!groupedData[uniqueKey]) {
+        groupedData[uniqueKey] = { name: labelName, Hadir: 0, Izin: 0, Sakit: 0, Alpha: 0, Total: 0 };
+      }
 
-      groupedData[name].Total += 1;
+      if (item.ket === 'Hadir') groupedData[uniqueKey].Hadir += 1;
+      else if (item.ket === 'Izin') groupedData[uniqueKey].Izin += 1;
+      else if (item.ket === 'Sakit') groupedData[uniqueKey].Sakit += 1;
+      else if (item.ket === 'Alpha') groupedData[uniqueKey].Alpha += 1;
+
+      groupedData[uniqueKey].Total += 1;
     });
 
     return Object.values(groupedData)
-      .map(emp => ({
-        name: emp.name.split(' ')[0], 
-        Hadir: emp.Hadir,
-        Izin: emp.Izin,
-        Sakit: emp.Sakit,
-        Alpha: emp.Alpha,
-        Total: emp.Total
-      }))
       .sort((a, b) => b.Total - a.Total) 
       .slice(0, 10); 
   };
@@ -296,7 +299,7 @@ export default function Dashboard({ currentRole }) {
           </ResponsiveContainer>
         );
       }
-      // RENDER STACKED BAR UNTUK ABSENSI (WARNA CUSTOM KHUSUS ABSEN)
+      // 👇 PERBAIKAN KODE MENGGAMBAR GRAFIK ABSEN (Dikembalikan)
       case 'absen': {
         const data = getAbsenStats(currentAbsen);
         if (data.length === 0) return noDataView;
@@ -306,22 +309,12 @@ export default function Dashboard({ currentRole }) {
             <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} dy={10} />
-              
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fill: '#64748b', fontSize: 12}} 
-                domain={[0, 30]} 
-                ticks={[0, 15, 30]} 
-              />
-              
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[0, 30]} ticks={[0, 15, 30]} />
               <RechartsTooltip cursor={{fill: '#F4F7FC'}} content={<CustomAbsenTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: '500' }} iconType="circle" />
-              
-              {/* Warna Khusus Absensi Sesuai Request */}
               <Bar dataKey="Hadir" stackId="a" fill="#10B981" maxBarSize={60} />
               <Bar dataKey="Izin" stackId="a" fill="#01BFD7" maxBarSize={60} />
-              <Bar dataKey="Sakit" stackId="a" fill="#F59E0B" maxBarSize={60} />
+              <Bar dataKey="Sakit" stackId="a" fill="#A360DF" maxBarSize={60} />
               <Bar dataKey="Alpha" stackId="a" fill="#394059" maxBarSize={60} />
             </BarChart>
           </ResponsiveContainer>
@@ -334,7 +327,6 @@ export default function Dashboard({ currentRole }) {
   return (
     <div className="space-y-6">
       
-      {/* 4 KOTAK RINGKASAN */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${currentRole !== 'user' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-[#01BFD7]/10 text-[#01BFD7] rounded-lg flex items-center justify-center"><Wifi className="w-6 h-6" /></div>
@@ -369,13 +361,10 @@ export default function Dashboard({ currentRole }) {
         </div>
       </div>
 
-      {/* BARIS 1: TREND & PAKET */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm lg:col-span-2 relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'trend', 
-            title: 'Trend Pemasangan Baru (PSB)',
-            desc: 'Melihat pergerakan naik-turunnya jumlah pelanggan baru berdasarkan tanggal aktivasi.'
+            id: 'trend', title: 'Trend Pemasangan Baru (PSB)', desc: 'Melihat pergerakan naik-turunnya jumlah pelanggan baru berdasarkan tanggal aktivasi.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Trend Pemasangan Baru (PSB)</h3>
           <div className="h-64">{renderChart('trend', false)}</div>
@@ -383,22 +372,17 @@ export default function Dashboard({ currentRole }) {
         
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'paket', 
-            title: 'Distribusi Paket Terlaris',
-            desc: 'Menganalisis paket layanan mana yang paling diminati pelanggan.'
+            id: 'paket', title: 'Distribusi Paket Terlaris', desc: 'Menganalisis paket layanan mana yang paling diminati pelanggan.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Distribusi Paket Terlaris</h3>
           <div className="h-64">{renderChart('paket', false)}</div>
         </div>
       </div>
 
-      {/* BARIS 2: PROMO, PERFORMA, LEMBUR */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'promo', 
-            title: 'Rasio Promo vs Berbayar',
-            desc: 'Membandingkan jumlah pendaftar harga normal (Berbayar) dengan pendaftar harga Promo.'
+            id: 'promo', title: 'Rasio Promo vs Berbayar', desc: 'Membandingkan jumlah pendaftar harga normal (Berbayar) dengan pendaftar harga Promo.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Promo vs Berbayar</h3>
           <div className="h-60">{renderChart('promo', false)}</div>
@@ -406,9 +390,7 @@ export default function Dashboard({ currentRole }) {
 
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'performa', 
-            title: 'Top Performa Referensi (Via)',
-            desc: 'Mengevaluasi pihak/teknisi yang paling banyak mendatangkan pelanggan baru.'
+            id: 'performa', title: 'Top Performa Referensi (Via)', desc: 'Mengevaluasi pihak/teknisi yang paling banyak mendatangkan pelanggan baru.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Top Performa (Via)</h3>
           <div className="h-60">{renderChart('performa', false)}</div>
@@ -416,32 +398,27 @@ export default function Dashboard({ currentRole }) {
 
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'lembur', 
-            title: 'Beban Lembur Karyawan',
-            desc: 'Memantau jam lembur tambahan untuk mencegah beban kerja yang tidak merata.'
+            id: 'lembur', title: 'Beban Lembur Karyawan', desc: 'Memantau jam lembur tambahan untuk mencegah beban kerja yang tidak merata.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           <h3 className="text-base font-semibold text-[#394059] mb-4">Beban Lembur Karyawan</h3>
           <div className="h-60">{renderChart('lembur', false)}</div>
         </div>
       </div>
 
-      {/* BARIS 3: REKAP ABSENSI */}
       <div className="grid grid-cols-1 w-full">
         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative group hover:border-[#01BFD7]/30 transition-colors">
           <button onClick={() => setExpandedChart({
-            id: 'absen', 
-            title: 'Akumulasi Hari Kehadiran per Karyawan',
-            desc: 'Memantau jumlah hari kehadiran (Hadir, Izin, Sakit, Alpha) untuk masing-masing karyawan.'
+            id: 'absen', title: 'Akumulasi Hari Kehadiran per Karyawan', desc: 'Memantau jumlah hari kehadiran (Hadir, Izin, Sakit, Alpha) untuk masing-masing karyawan.'
           })} className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#01BFD7] hover:bg-[#01BFD7]/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"><Maximize2 className="w-4 h-4" /></button>
           
           <h3 className="text-base font-semibold text-[#394059] flex items-center gap-2 mb-6">
+            <UserCheck className="w-5 h-5 text-[#01BFD7]" />
             Akumulasi Kehadiran Bulanan (Maks 30 Hari)
           </h3>
           <div className="h-80">{renderChart('absen', false)}</div>
         </div>
       </div>
 
-      {/* MODAL PERBESAR GRAFIK DENGAN FITUR FILTER & DESKRIPSI */}
       {expandedChart && (
         <div className="fixed inset-0 bg-[#394059]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 lg:p-10">
           <div className="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -449,7 +426,6 @@ export default function Dashboard({ currentRole }) {
             <div className="p-5 border-b border-slate-100 bg-[#F4F7FC] flex flex-col gap-4">
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 
-                {/* Header Kiri: Judul dan Deskripsi */}
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-[#394059] flex items-center gap-2">
                     <Maximize2 className="w-5 h-5 text-[#01BFD7]" /> {expandedChart.title}
@@ -459,7 +435,6 @@ export default function Dashboard({ currentRole }) {
                   </p>
                 </div>
                 
-                {/* Header Kanan: Filter dan Tombol Close */}
                 <div className="flex items-center gap-3 lg:self-start self-end">
                   <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                     <div className="px-2 text-slate-400 hidden sm:block"><Filter className="w-4 h-4" /></div>
@@ -485,7 +460,6 @@ export default function Dashboard({ currentRole }) {
               </div>
             </div>
 
-            {/* Area Grafik */}
             <div className="flex-1 p-6 lg:p-10 min-h-0 bg-white flex flex-col items-center justify-center">
               {renderChart(expandedChart.id, true)}
             </div>

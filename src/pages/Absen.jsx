@@ -225,19 +225,27 @@ export default function Absen({ currentRole }) {
                   <label className="block text-sm font-medium text-[#394059] mb-1">Tgl & Jam Absen</label>
                   <input required type="datetime-local" name="tgl" value={formData.tgl || ''} onChange={e => setFormData({...formData, tgl: e.target.value})} className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#01BFD7] focus:border-[#01BFD7] text-sm" />
                 </div>
+                
+                {/* 👇 BAGIAN INI YANG DIPERBAIKI AGAR NUR-CS DAN NUR-TEKNISI TIDAK TERTUKAR */}
                 <div>
                   <label className="block text-sm font-medium text-[#394059] mb-1">Nama Karyawan</label>
-                  <select required name="nama" value={formData.nama || ''} 
+                  <select required name="nama" 
+                    value={formData.nama ? `${formData.nama}-${formData.divisi}` : ''} 
                     onChange={(e) => {
-                      const employee = DAFTAR_KARYAWAN.find(k => k.nama === e.target.value);
+                      const selectedValue = e.target.value;
+                      const employee = DAFTAR_KARYAWAN.find(k => `${k.nama}-${k.role}` === selectedValue);
                       if (employee) setFormData({...formData, nama: employee.nama, divisi: employee.role});
                       else setFormData({...formData, nama: '', divisi: ''});
                     }} 
                     className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#01BFD7] focus:border-[#01BFD7]">
                     <option value="">Pilih Karyawan...</option>
-                    {DAFTAR_KARYAWAN.map(k => <option key={k.nama} value={k.nama}>{k.nama} - {k.role}</option>)}
+                    {DAFTAR_KARYAWAN.map((k, index) => (
+                      <option key={index} value={`${k.nama}-${k.role}`}>{k.nama} - {k.role}</option>
+                    ))}
                   </select>
                 </div>
+                {/* 👆 BATAS PERBAIKAN DROPDOWN */}
+
                 <div>
                   <label className="block text-sm font-medium text-[#394059] mb-1">Keterangan Kehadiran</label>
                   <select required name="ket" value={formData.ket || ''} onChange={e => setFormData({...formData, ket: e.target.value})} className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#01BFD7] focus:border-[#01BFD7]">
