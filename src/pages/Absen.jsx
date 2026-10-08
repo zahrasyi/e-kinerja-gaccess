@@ -179,9 +179,9 @@ export default function Absen({ currentRole }) {
             </thead>
             <tbody className="text-sm divide-y divide-slate-100 print:divide-slate-300">
               {processedData.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-slate-500 print:border print:border-slate-300">Data tidak ditemukan</td></tr>}
-              {processedData.map((row) => (
+              {processedData.map((row, index) => (
                 <tr key={row.id} className="hover:bg-[#F4F7FC]/50 transition-colors print:break-inside-avoid">
-                  <td className="p-4 print:p-2 print:border print:border-slate-300 text-center font-bold text-[#394059]">{row.no || '-'}</td>
+                  <td className="p-4 print:p-2 print:border print:border-slate-300 text-center font-bold text-[#394059]">{index + 1}</td>
                   <td className="p-4 print:p-2 print:border print:border-slate-300 whitespace-nowrap">{formatDateTime(row.tgl)}</td>
                   <td className="p-4 print:p-2 print:border print:border-slate-300">
                     <p className="font-semibold text-[#394059]">{row.nama}</p>

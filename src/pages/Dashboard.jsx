@@ -29,9 +29,18 @@ export default function Dashboard({ currentRole }) {
   const [modalFilterDate, setModalFilterDate] = useState('');
   const [modalFilterMonth, setModalFilterMonth] = useState('');
   const [modalFilterYear, setModalFilterYear] = useState('');
+  const [omzetSlide, setOmzetSlide] = useState(0); // 0=Total, 1=Normal, 2=Promo
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    // Ganti slide omzet setiap 3 detik (3000 ms)
+    const interval = setInterval(() => {
+      setOmzetSlide((prev) => (prev + 1) % 3);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
@@ -194,13 +203,21 @@ export default function Dashboard({ currentRole }) {
     return null;
   };
 
-  const totalOmzet = psbData.reduce((acc, curr) => {
-    if (curr.paket && curr.keterangan !== 'Promo') {
+  // Menghitung omzet Promo, Berbayar (Normal), dan Total Keseluruhan
+  const omzet = psbData.reduce((acc, curr) => {
+    if (curr.paket) {
       const nominal = parseInt(curr.paket.replace(/\./g, ''), 10);
-      return acc + (isNaN(nominal) ? 0 : nominal);
+      const validNominal = isNaN(nominal) ? 0 : nominal;
+      
+      if (curr.keterangan === 'Promo') {
+        acc.promo += validNominal;
+      } else {
+        acc.berbayar += validNominal;
+      }
+      acc.total += validNominal;
     }
     return acc;
-  }, 0);
+  }, { promo: 0, berbayar: 0, total: 0 });
 
   const generateInsight = () => {
     if (psbData.length === 0) return "Sistem belum menerima data pemasangan baru bulan ini. Ayo tingkatkan penjualan!";
@@ -334,9 +351,37 @@ export default function Dashboard({ currentRole }) {
         </div>
 
         {currentRole !== 'user' && (
-          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-[#10B981]/10 text-[#10B981] rounded-lg flex items-center justify-center"><DollarSign className="w-6 h-6" /></div>
-            <div><p className="text-sm text-slate-500 font-medium">Est. Omzet Berbayar</p><h3 className="text-xl font-bold text-[#394059]">Rp {totalOmzet.toLocaleString('id-ID')}</h3></div>
+          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow h-[88px]">
+            <div className="w-12 h-12 bg-[#10B981]/10 text-[#10B981] rounded-lg flex items-center justify-center shrink-0">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            
+            {/* AREA SLIDE (Tinggi dibatasi agar tidak bengkak) */}
+            <div className="relative w-full h-[48px] overflow-hidden">
+              
+              {/* SLIDE 1: Total Omzet */}
+              <div className={`absolute inset-0 flex flex-col justify-center transition-all duration-700 ease-in-out ${omzetSlide === 0 ? 'opacity-100 translate-y-0 z-10' : 'opacity-0 translate-y-2 z-0 pointer-events-none'}`}>
+                <p className="text-sm text-slate-500 font-medium leading-none mb-1.5">Total Estimasi Omzet</p>
+                <h3 className="text-xl font-bold text-[#394059] leading-none">Rp {omzet.total.toLocaleString('id-ID')}</h3>
+              </div>
+
+              {/* SLIDE 2: Omzet Normal */}
+              <div className={`absolute inset-0 flex flex-col justify-center transition-all duration-700 ease-in-out ${omzetSlide === 1 ? 'opacity-100 translate-y-0 z-10' : 'opacity-0 translate-y-2 z-0 pointer-events-none'}`}>
+                <p className="text-sm text-slate-500 font-medium leading-none mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]"></span> Omzet Paket Berbayar
+                </p>
+                <h3 className="text-xl font-bold text-[#394059] leading-none">Rp {omzet.berbayar.toLocaleString('id-ID')}</h3>
+              </div>
+
+              {/* SLIDE 3: Omzet Promo */}
+              <div className={`absolute inset-0 flex flex-col justify-center transition-all duration-700 ease-in-out ${omzetSlide === 2 ? 'opacity-100 translate-y-0 z-10' : 'opacity-0 translate-y-2 z-0 pointer-events-none'}`}>
+                <p className="text-sm text-slate-500 font-medium leading-none mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span> Omzet Paket Promo
+                </p>
+                <h3 className="text-xl font-bold text-[#394059] leading-none">Rp {omzet.promo.toLocaleString('id-ID')}</h3>
+              </div>
+
+            </div>
           </div>
         )}
 
@@ -467,7 +512,13 @@ export default function Dashboard({ currentRole }) {
           </div>
         </div>
       )}
-
+      {/* AREA COPYRIGHT */}
+    <div className="mt-10 pt-2 border-t border-slate-100 text-center pb-3">
+      <p className="text-xs text-slate-400 font-medium tracking-wide">
+        &copy; {new Date().getFullYear()} G ACCESS POP. Pacitan - Sistem Informasi Kinerja Karyawan. All rights reserved.
+      </p>
     </div>
+    </div>
+    
   );
 }
