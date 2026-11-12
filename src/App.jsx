@@ -7,7 +7,7 @@ import Absen from './pages/Absen';
 import Login from './pages/Login';
 import SettingsPage from './pages/SettingsPage';
 import logoKantor from './assets/logo.png';
-import simbolWatermark from './assets/simbol.jpg';
+import simbolWatermark from './assets/simbol.png';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {

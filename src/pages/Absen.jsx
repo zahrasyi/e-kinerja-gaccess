@@ -128,7 +128,22 @@ export default function Absen({ currentRole }) {
   };
 
   // 👇 TEKS PERIODE DINAMIS UNTUK DIKIRIM KE KOP SURAT
-  const teksPeriode = `${filterDate ? filterDate : ''} ${filterMonth ? BULAN_OPTIONS.find(m => m.value === filterMonth)?.label : 'Semua Bulan'} ${filterYear || 'Semua Tahun'}`;
+  // Membuat teks periode otomatis yang lebih fleksibel
+  let teksPeriode = "Semua Waktu";
+  
+  // Mengumpulkan filter apa saja yang sedang dipilih/tidak kosong
+  let arrFilter = [];
+  if (filterDate) arrFilter.push(filterDate);
+  if (filterMonth) arrFilter.push(filterMonth);
+  if (filterYear) arrFilter.push(filterYear);
+
+  // Kalau ada minimal 1 filter yang dipilih, gabungkan kata-katanya
+  if (arrFilter.length > 0) {
+    teksPeriode = arrFilter.join("-");
+  }
+
+  // Membuat array berisi 20 tahun ke depan, dimulai dari tahun 2024
+  const daftarTahun = Array.from({ length: 20 }, (_, i) => 2024 + i);
 
   return (
     // 👇 BUNGKUS DENGAN COMPONENT CETAK KITA
@@ -148,8 +163,18 @@ export default function Absen({ currentRole }) {
               <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="flex-1 bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-2 border-r border-slate-200 cursor-pointer">
                 <option value="">Bulan</option>{BULAN_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
-              <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="flex-1 bg-transparent text-sm text-[#394059] focus:outline-none py-2 px-2 cursor-pointer">
-                <option value="">Tahun</option>{TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+              <select 
+                value={filterYear} 
+                onChange={(e) => setFilterYear(e.target.value)} 
+                className="px-2 text-slate-600 py-1 bg-transparent border-none outline-none cursor-pointer"
+              >
+                <option value="">Tahun</option>
+                {/* Me-looping daftarTahun yang sudah kita buat di atas */}
+                {daftarTahun.map((tahun) => (
+                  <option key={tahun} value={tahun}>
+                    {tahun}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
