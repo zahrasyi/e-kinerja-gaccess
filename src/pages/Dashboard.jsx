@@ -221,7 +221,7 @@ export default function Dashboard({ currentRole }) {
 
   const generateInsight = () => {
     if (psbData.length === 0) return "Sistem belum menerima data pemasangan baru bulan ini. Ayo tingkatkan penjualan!";
-    let insight = `Bulan ini tercatat ${psbData.length} PSB baru. `;
+    let insight = `Hingga saat ini tercatat ${psbData.length} PSB baru. `;
     const paketStats = getPaketStats(psbData);
     if (paketStats.length > 0) {
       const topPaket = [...paketStats].sort((a, b) => b.value - a.value)[0];
